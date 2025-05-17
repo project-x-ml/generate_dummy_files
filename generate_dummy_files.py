@@ -33,7 +33,7 @@ CUSTOM_MIME_HANDLERS = {
     "application/octet-stream": {"ext": ".bin", "generator": "_generate_dummy_binary"},
     "image/jpeg": {"ext": ".jpg", "generator": "_generate_dummy_binary"},
     "image/png": {"ext": ".png", "generator": "_generate_dummy_binary"},
-    "application/pdf": {"ext": ".pdf", "generator": "_generate_dummy_binary"},
+    "application/pdf": {"ext": ".pdf", "generator": "_generate_dummy_pdf"},
     "video/mp4": {"ext": ".mp4", "generator": "_generate_dummy_binary"},
     "application/zip": {"ext": ".zip", "generator": "_generate_dummy_binary"},
     "application/gzip": {"ext": ".gz", "generator": "_generate_dummy_binary"},
@@ -209,6 +209,51 @@ def _generate_dummy_json(file_obj, total_size):
     # For this dummy generator, "close enough" is usually fine.
     if bytes_written < total_size:
         _generate_dummy_binary(file_obj, total_size - bytes_written)
+
+
+
+def _generate_dummy_pdf(file_obj, total_size):
+    """
+    Generates a minimal valid PDF file and pads it to the desired size.
+    The PDF will have a single page and some dummy text.
+    """
+    # Minimal PDF header and body
+    header = b"%PDF-1.4\n%\xE2\xE3\xCF\xD3\n"
+    body = (
+        b"1 0 obj\n"
+        b"<< /Type /Catalog /Pages 2 0 R >>\n"
+        b"endobj\n"
+        b"2 0 obj\n"
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n"
+        b"endobj\n"
+        b"3 0 obj\n"
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << >> >>\n"
+        b"endobj\n"
+        b"4 0 obj\n"
+        b"<< /Length 44 >>\n"
+        b"stream\n"
+        b"BT /F1 24 Tf 100 700 Td (Dummy PDF content) Tj ET\n"
+        b"endstream\n"
+        b"endobj\n"
+        b"xref\n"
+        b"0 5\n"
+        b"0000000000 65535 f \n"
+        b"0000000010 00000 n \n"
+        b"0000000061 00000 n \n"
+        b"0000000112 00000 n \n"
+        b"0000000211 00000 n \n"
+        b"trailer\n"
+        b"<< /Size 5 /Root 1 0 R >>\n"
+        b"startxref\n"
+        b"312\n"
+        b"%%EOF\n"
+    )
+    data = header + body
+    file_obj.write(data)
+    bytes_written = len(data)
+    # Pad with zeros or random data to reach total_size
+    if bytes_written < total_size:
+        file_obj.write(os.urandom(total_size - bytes_written))
 
 
 def _generate_dummy_xlsx(file_obj, total_size):
