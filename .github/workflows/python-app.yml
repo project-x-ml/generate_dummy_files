@@ -36,9 +36,9 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-      if pytest --collect-only | grep -q 'collected 0 items'; then
-        echo "No tests found, passing job."
-        exit 0
-      else
-        pytest
-      fi   - name: Test with pytest
+        if pytest --collect-only | grep -q 'collected 0 items'; then
+          echo "No tests found, passing job."
+          exit 0
+        else
+          pytest
+        fi   - name: Test with pytest
