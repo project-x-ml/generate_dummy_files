@@ -173,4 +173,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-generated_data/
+generated_data*/
+*.zip
+.DS_Store
