@@ -211,6 +211,73 @@ def _generate_dummy_json(file_obj, total_size):
         _generate_dummy_binary(file_obj, total_size - bytes_written)
 
 
+def _generate_dummy_xlsx(file_obj, total_size):
+    """
+    Generates a minimal valid XLSX file (Office Open XML Spreadsheet document) and pads it to the desired size.
+    The XLSX format is a ZIP archive with specific XML files inside.
+    """
+
+    # Minimal XLSX structure (required files)
+    xlsx_files = {
+        '[Content_Types].xml': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            b'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            b'<Default Extension="xml" ContentType="application/xml"/>'
+            b'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            b'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            b'</Types>'
+        ),
+        '_rels/.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            b'</Relationships>'
+        ),
+        'xl/_rels/workbook.xml.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+            b'</Relationships>'
+        ),
+        'xl/workbook.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            b'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            b'<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>'
+            b'</workbook>'
+        ),
+        'xl/worksheets/sheet1.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            b'<sheetData>'
+            b'<row r="1"><c r="A1" t="inlineStr"><is><t>Dummy XLSX content</t></is></c></row>'
+            b'</sheetData>'
+            b'</worksheet>'
+        ),
+    }
+
+    # Write minimal XLSX to a BytesIO buffer
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as xlsx_zip:
+        for name, content in xlsx_files.items():
+            xlsx_zip.writestr(name, content)
+        # Add a large dummy part to quickly reach the target size
+        # This is not strictly valid, but most XLSX readers ignore unknown files
+        dummy_size = max(0, total_size - buffer.tell() - 1024)
+        if dummy_size > 0:
+            xlsx_zip.writestr('xl/media/dummy.bin', os.urandom(dummy_size))
+
+    # Write the buffer to the output file
+    data = buffer.getvalue()
+    file_obj.write(data)
+    bytes_written = len(data)
+
+    # If still not enough, pad with zeros (rare, but possible due to zip overhead)
+    if bytes_written < total_size:
+        file_obj.write(b'\0' * (total_size - bytes_written))
+
+
 def _generate_dummy_pptx(file_obj, total_size):
     """
     Generates a minimal valid PPTX file (Office Open XML Presentation document) and pads it to the desired size.
