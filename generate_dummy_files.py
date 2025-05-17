@@ -39,6 +39,7 @@ CUSTOM_MIME_HANDLERS = {
     "application/gzip": {"ext": ".gz", "generator": "_generate_dummy_binary"},
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {"ext": ".docx", "generator": "_generate_dummy_docx"},
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": {"ext": ".pptx", "generator": "_generate_dummy_pptx"},
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {"ext": ".xlsx", "generator": "_generate_dummy_xlsx"},
     # Add more specific handlers if needed, otherwise they fall back to binary
 }
 
@@ -234,11 +235,14 @@ def _generate_dummy_pptx(file_obj, total_size):
         ),
         'ppt/_rels/presentation.xml.rels': (
             b'<?xml version="1.0" encoding="UTF-8"?>'
-            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>'
+            b'</Relationships>'
         ),
         'ppt/presentation.xml': (
             b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            b'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+            b'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            b'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             b'<p:sldIdLst>'
             b'<p:sldId id="256" r:id="rId1"/>'
             b'</p:sldIdLst>'
@@ -248,7 +252,8 @@ def _generate_dummy_pptx(file_obj, total_size):
         ),
         'ppt/slides/slide1.xml': (
             b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            b'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+            b'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            b'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             b'<p:cSld><p:spTree><p:nvGrpSpPr/><p:grpSpPr/></p:spTree></p:cSld>'
             b'</p:sld>'
         ),
@@ -267,7 +272,7 @@ def _generate_dummy_pptx(file_obj, total_size):
         # This is not strictly valid, but most PPTX readers ignore unknown files
         dummy_size = max(0, total_size - buffer.tell() - 1024)
         if dummy_size > 0:
-            pptx_zip.writestr('ppt/dummy.bin', os.urandom(dummy_size))
+            pptx_zip.writestr('ppt/media/dummy.bin', os.urandom(dummy_size))
 
     # Write the buffer to the output file
     data = buffer.getvalue()
