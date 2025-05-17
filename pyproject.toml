@@ -13,6 +13,9 @@ dependencies = [
     "pillow>=11.2.1",
 ]
 
+[project.scripts]
+generate-dummy-files = "generate_dummy_files.__main__:main"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"

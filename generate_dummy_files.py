@@ -419,7 +419,7 @@ def _generate_dummy_pptx(file_obj, total_size):
     The PPTX format is a ZIP archive with specific XML files inside.
     """
 
-    # Minimal PPTX structure (required files)
+    # Minimal PPTX structure (required files for PowerPoint to open)
     pptx_files = {
         '[Content_Types].xml': (
             b'<?xml version="1.0" encoding="UTF-8"?>'
@@ -427,6 +427,10 @@ def _generate_dummy_pptx(file_obj, total_size):
             b'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
             b'<Default Extension="xml" ContentType="application/xml"/>'
             b'<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
+            b'<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>'
+            b'<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>'
+            b'<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>'
+            b'<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>'
             b'</Types>'
         ),
         '_rels/.rels': (
@@ -439,12 +443,16 @@ def _generate_dummy_pptx(file_obj, total_size):
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>'
+            b'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>'
             b'</Relationships>'
         ),
         'ppt/presentation.xml': (
             b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             b'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
             b'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            b'<p:sldMasterIdLst>'
+            b'<p:sldMasterId id="2147483648" r:id="rId2"/>'
+            b'</p:sldMasterIdLst>'
             b'<p:sldIdLst>'
             b'<p:sldId id="256" r:id="rId1"/>'
             b'</p:sldIdLst>'
@@ -457,11 +465,54 @@ def _generate_dummy_pptx(file_obj, total_size):
             b'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
             b'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             b'<p:cSld><p:spTree><p:nvGrpSpPr/><p:grpSpPr/></p:spTree></p:cSld>'
+            b'<p:clrMapOvr><a:masterClrMapping xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"/></p:clrMapOvr>'
             b'</p:sld>'
         ),
         'ppt/slides/_rels/slide1.xml.rels': (
             b'<?xml version="1.0" encoding="UTF-8"?>'
-            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>'
+            b'</Relationships>'
+        ),
+        'ppt/slideLayouts/slideLayout1.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            b'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+            b'type="title">'
+            b'<p:cSld><p:spTree><p:nvGrpSpPr/><p:grpSpPr/></p:spTree></p:cSld>'
+            b'<p:clrMapOvr><a:masterClrMapping xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"/></p:clrMapOvr>'
+            b'</p:sldLayout>'
+        ),
+        'ppt/slideLayouts/_rels/slideLayout1.xml.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>'
+            b'</Relationships>'
+        ),
+        'ppt/slideMasters/slideMaster1.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+            b'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            b'<p:cSld><p:spTree><p:nvGrpSpPr/><p:grpSpPr/></p:spTree></p:cSld>'
+            b'<p:clrMap xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+            b'bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>'
+            b'<p:sldLayoutIdLst>'
+            b'<p:sldLayoutId id="1" r:id="rId1"/>'
+            b'</p:sldLayoutIdLst>'
+            b'</p:sldMaster>'
+        ),
+        'ppt/slideMasters/_rels/slideMaster1.xml.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>'
+            b'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>'
+            b'</Relationships>'
+        ),
+        'ppt/theme/theme1.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Dummy Theme">'
+            b'<a:themeElements/>'
+            b'</a:theme>'
         ),
     }
 
