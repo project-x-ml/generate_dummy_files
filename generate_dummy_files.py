@@ -10,6 +10,7 @@ import uuid
 import csv
 import io
 import zipfile
+from PIL import Image, ImageDraw, ImageFont
 
 # --- Configuration ---
 MIN_FILE_SIZE_GB = 1.0
@@ -31,8 +32,8 @@ CUSTOM_MIME_HANDLERS = {
     "text/csv": {"ext": ".csv", "generator": "_generate_dummy_csv"},
     "text/html": {"ext": ".html", "generator": "_generate_dummy_html"},
     "application/octet-stream": {"ext": ".bin", "generator": "_generate_dummy_binary"},
-    "image/jpeg": {"ext": ".jpg", "generator": "_generate_dummy_binary"},
-    "image/png": {"ext": ".png", "generator": "_generate_dummy_binary"},
+    "image/jpeg": {"ext": ".jpg", "generator": "_generate_dummy_jpeg"},
+    "image/png": {"ext": ".png", "generator": "_generate_dummy_png"},
     "application/pdf": {"ext": ".pdf", "generator": "_generate_dummy_pdf"},
     "video/mp4": {"ext": ".mp4", "generator": "_generate_dummy_binary"},
     "application/zip": {"ext": ".zip", "generator": "_generate_dummy_binary"},
@@ -210,6 +211,94 @@ def _generate_dummy_json(file_obj, total_size):
     if bytes_written < total_size:
         _generate_dummy_binary(file_obj, total_size - bytes_written)
 
+def _generate_dummy_png(file_obj, total_size):
+    """
+    Generates a minimal valid PNG file with random text rendered on the image,
+    and pads it to the desired size. Requires Pillow.
+    """
+
+    # Estimate image size to roughly match total_size (very approximate)
+    width, height = 512, 512
+
+    # Create a white image
+    img = Image.new('RGB', (width, height), color='white')
+    draw = ImageDraw.Draw(img)
+
+    # Generate random text
+    text = _get_random_printable_ascii_string(random.randint(20, 100))
+
+    # Try to use a default font
+    try:
+        font = ImageFont.truetype("DejaVuSans.ttf", 24)
+    except Exception:
+        font = ImageFont.load_default()
+
+    # Draw text in the center
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    x = (width - text_width) // 2
+    y = (height - text_height) // 2
+    draw.text((x, y), text, fill='black', font=font)
+
+    # Save image to a BytesIO buffer as PNG
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='PNG', compress_level=6)
+    png_data = img_buffer.getvalue()
+
+    # If the image is smaller than total_size, pad with random data
+    bytes_written = 0
+    file_obj.write(png_data)
+    bytes_written += len(png_data)
+
+    if bytes_written < total_size:
+        file_obj.write(os.urandom(total_size - bytes_written))
+
+
+def _generate_dummy_jpeg(file_obj, total_size):
+    """
+    Generates a minimal valid JPEG file with random text rendered on the image,
+    and pads it to the desired size. Requires Pillow.
+    """
+
+    # Estimate image size to roughly match total_size (very approximate)
+    # 3 bytes per pixel for RGB, plus JPEG compression (so image will be smaller)
+    # We'll use a fixed size and pad as needed.
+    width, height = 512, 512
+
+    # Create a white image
+    img = Image.new('RGB', (width, height), color='white')
+    draw = ImageDraw.Draw(img)
+
+    # Generate random text
+    text = _get_random_printable_ascii_string(random.randint(20, 100))
+
+    # Try to use a default font
+    try:
+        font = ImageFont.truetype("DejaVuSans.ttf", 24)
+    except Exception:
+        font = ImageFont.load_default()
+
+    # Draw text in the center
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    x = (width - text_width) // 2
+    y = (height - text_height) // 2
+    draw.text((x, y), text, fill='black', font=font)
+
+    # Save image to a BytesIO buffer as JPEG
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='JPEG', quality=85)
+    jpeg_data = img_buffer.getvalue()
+
+    # If the image is smaller than total_size, pad with random data
+    bytes_written = 0
+    file_obj.write(jpeg_data)
+    bytes_written += len(jpeg_data)
+
+    if bytes_written < total_size:
+        file_obj.write(os.urandom(total_size - bytes_written))
 
 
 def _generate_dummy_pdf(file_obj, total_size):
