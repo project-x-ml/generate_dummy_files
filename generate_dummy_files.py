@@ -38,7 +38,7 @@ CUSTOM_MIME_HANDLERS = {
     "application/zip": {"ext": ".zip", "generator": "_generate_dummy_binary"},
     "application/gzip": {"ext": ".gz", "generator": "_generate_dummy_binary"},
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {"ext": ".docx", "generator": "_generate_dummy_docx"},
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": {"ext": ".pptx", "generator": "_generate_dummy_binary"},
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": {"ext": ".pptx", "generator": "_generate_dummy_pptx"},
     # Add more specific handlers if needed, otherwise they fall back to binary
 }
 
@@ -209,6 +209,74 @@ def _generate_dummy_json(file_obj, total_size):
     if bytes_written < total_size:
         _generate_dummy_binary(file_obj, total_size - bytes_written)
 
+
+def _generate_dummy_pptx(file_obj, total_size):
+    """
+    Generates a minimal valid PPTX file (Office Open XML Presentation document) and pads it to the desired size.
+    The PPTX format is a ZIP archive with specific XML files inside.
+    """
+
+    # Minimal PPTX structure (required files)
+    pptx_files = {
+        '[Content_Types].xml': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            b'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            b'<Default Extension="xml" ContentType="application/xml"/>'
+            b'<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
+            b'</Types>'
+        ),
+        '_rels/.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>'
+            b'</Relationships>'
+        ),
+        'ppt/_rels/presentation.xml.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+        ),
+        'ppt/presentation.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+            b'<p:sldIdLst>'
+            b'<p:sldId id="256" r:id="rId1"/>'
+            b'</p:sldIdLst>'
+            b'<p:sldSz cx="9144000" cy="6858000" type="screen4x3"/>'
+            b'<p:notesSz cx="6858000" cy="9144000"/>'
+            b'</p:presentation>'
+        ),
+        'ppt/slides/slide1.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+            b'<p:cSld><p:spTree><p:nvGrpSpPr/><p:grpSpPr/></p:spTree></p:cSld>'
+            b'</p:sld>'
+        ),
+        'ppt/slides/_rels/slide1.xml.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+        ),
+    }
+
+    # Write minimal PPTX to a BytesIO buffer
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as pptx_zip:
+        for name, content in pptx_files.items():
+            pptx_zip.writestr(name, content)
+        # Add a large dummy part to quickly reach the target size
+        # This is not strictly valid, but most PPTX readers ignore unknown files
+        dummy_size = max(0, total_size - buffer.tell() - 1024)
+        if dummy_size > 0:
+            pptx_zip.writestr('ppt/dummy.bin', os.urandom(dummy_size))
+
+    # Write the buffer to the output file
+    data = buffer.getvalue()
+    file_obj.write(data)
+    bytes_written = len(data)
+
+    # If still not enough, pad with zeros (rare, but possible due to zip overhead)
+    if bytes_written < total_size:
+        file_obj.write(b'\0' * (total_size - bytes_written))
 
 
 def _generate_dummy_docx(file_obj, total_size):
