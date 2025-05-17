@@ -11,6 +11,7 @@ import csv
 import io
 import zipfile
 from PIL import Image, ImageDraw, ImageFont
+import shutil
 
 # --- Configuration ---
 MIN_FILE_SIZE_GB = 1.0
@@ -688,7 +689,8 @@ def generate_file(mime_type, output_dir="."):
 
     # Sanitize mime_type for filename
     safe_mime_name = mime_type.replace("/", "_").replace("+", "_")
-    timestamp = int(time.time())
+    # Use a high-resolution timestamp and random suffix to avoid filename conflicts
+    timestamp = f"{int(time.time())}_{random.randint(1000, 9999)}"
     filename = f"dummy_{safe_mime_name}_{timestamp}{file_ext}"
     filepath = os.path.join(output_dir, filename)
 
@@ -788,6 +790,12 @@ def main():
     for mime_type in args.mime_types:
         for file in range(NO_FILES):
             generate_file(mime_type, args.output_dir)
+
+    # Compress the output directory into a zip file after all files are generated
+    output_zip = os.path.abspath(args.output_dir.rstrip(os.sep)) + ".zip"
+    print(f"\nCompressing output directory '{args.output_dir}' to '{output_zip}' ...")
+    shutil.make_archive(os.path.splitext(output_zip)[0], 'zip', args.output_dir)
+    print(f"Compression complete: {output_zip}")
 
     print("\nAll tasks completed.")
 
