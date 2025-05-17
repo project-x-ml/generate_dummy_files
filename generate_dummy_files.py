@@ -8,6 +8,8 @@ import string
 import time
 import uuid
 import csv
+import io
+import zipfile
 
 # --- Configuration ---
 MIN_FILE_SIZE_GB = 1.0
@@ -35,7 +37,7 @@ CUSTOM_MIME_HANDLERS = {
     "video/mp4": {"ext": ".mp4", "generator": "_generate_dummy_binary"},
     "application/zip": {"ext": ".zip", "generator": "_generate_dummy_binary"},
     "application/gzip": {"ext": ".gz", "generator": "_generate_dummy_binary"},
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {"ext": ".docx", "generator": "_generate_dummy_binary"},
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {"ext": ".docx", "generator": "_generate_dummy_docx"},
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": {"ext": ".pptx", "generator": "_generate_dummy_binary"},
     # Add more specific handlers if needed, otherwise they fall back to binary
 }
@@ -206,6 +208,65 @@ def _generate_dummy_json(file_obj, total_size):
     # For this dummy generator, "close enough" is usually fine.
     if bytes_written < total_size:
         _generate_dummy_binary(file_obj, total_size - bytes_written)
+
+
+
+def _generate_dummy_docx(file_obj, total_size):
+    """
+    Generates a minimal valid DOCX file (Office Open XML Word document) and pads it to the desired size.
+    The DOCX format is a ZIP archive with specific XML files inside.
+    """
+
+    # Minimal DOCX structure (required files)
+    docx_files = {
+        '[Content_Types].xml': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            b'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            b'<Default Extension="xml" ContentType="application/xml"/>'
+            b'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            b'</Types>'
+        ),
+        '_rels/.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+            b'</Relationships>'
+        ),
+        'word/_rels/document.xml.rels': (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
+        ),
+        'word/document.xml': (
+            b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            b'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            b'<w:body>'
+            b'<w:p><w:r><w:t>Dummy DOCX content</w:t></w:r></w:p>'
+            b'</w:body>'
+            b'</w:document>'
+        ),
+    }
+
+    # Write minimal DOCX to a BytesIO buffer
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as docx_zip:
+        for name, content in docx_files.items():
+            docx_zip.writestr(name, content)
+        # Add a large dummy part to quickly reach the target size
+        # This is not strictly valid, but most DOCX readers ignore unknown files
+        dummy_size = max(0, total_size - buffer.tell() - 1024)
+        if dummy_size > 0:
+            # Write a large file inside the zip to pad size
+            docx_zip.writestr('word/dummy.bin', os.urandom(dummy_size))
+
+    # Write the buffer to the output file
+    data = buffer.getvalue()
+    file_obj.write(data)
+    bytes_written = len(data)
+
+    # If still not enough, pad with zeros (rare, but possible due to zip overhead)
+    if bytes_written < total_size:
+        file_obj.write(b'\0' * (total_size - bytes_written))
 
 
 def _generate_dummy_xml(file_obj, total_size):
