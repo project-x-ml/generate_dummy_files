@@ -5,13 +5,11 @@ description = "A project to generate dummy files"
 authors = [
     { name = "w h somadasa", email = "rhewage.lk@gmail.com" }
 ]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
-license = { text = "MIT" }
+
+license-files = ["LICENSE"]
+
 readme = "README.md"
+
 requires-python = ">=3.12"
 dependencies = [
     # Add your dependencies here, for example:
