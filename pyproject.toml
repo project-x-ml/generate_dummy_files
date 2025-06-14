@@ -1,11 +1,16 @@
 [project]
-name = "generate_dummy_files"
-version = "0.1.0"
+name = "phantom_file_forge"
+version = "0.1.1"
 description = "A project to generate dummy files"
 authors = [
-    { name = "w h somadasa", email = "your@gmail.com" }
+    { name = "w h somadasa", email = "rhewage.lk@gmail.com" }
 ]
-license = { text = "GPL-3.0-or-later" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -14,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-generate-dummy-files = "generate_dummy_files.__main__:main"
+generate-dummy-files = "phantom_file_forge.__main__:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

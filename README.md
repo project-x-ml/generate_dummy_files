@@ -1,4 +1,4 @@
-# generate_dummy_files
+# phantom_file_forge
 generate dummy data for various MIME types for testing purposes
 
 ## Usage
@@ -21,7 +21,7 @@ The `generate_dummy_files.py` script allows you to generate dummy files for vari
 ### Example
 
 ```bash
-python3 generate_dummy_files.py image/png image/jpeg application/pdf application/vnd.openxmlformats-officedocument.spreadsheetml.sheet application/vnd.openxmlformats-officedocument.presentationml.presentation application/vnd.openxmlformats-officedocument.wordprocessingml.document --no-files 80 -o ./generated_data_set
+phantom_file_forge image/png image/jpeg application/pdf application/vnd.openxmlformats-officedocument.spreadsheetml.sheet application/vnd.openxmlformats-officedocument.presentationml.presentation application/vnd.openxmlformats-officedocument.wordprocessingml.document --no-files 80 -o ./generated_data_set
 ```
 
 This command generates 80 dummy files for each specified MIME type, each with file size ranging between 6MB and 8MB and saves them in the `./generated_data_set` directory.
