@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "phantom_file_forge"
-version = "0.1.5"
+version = "0.1.6"
 description = "A project to generate dummy files"
 authors = [
     { name = "w h somadasa", email = "rhewage.lk@gmail.com" }

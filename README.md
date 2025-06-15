@@ -3,7 +3,7 @@ generate dummy data for various MIME types for testing purposes
 
 ## Usage
 
-The `generate_dummy_files.py` script allows you to generate dummy files for various MIME types.
+Use the `phantom_file_forge` command-line tool to generate dummy files for various MIME types.
 
 ### Arguments
 
